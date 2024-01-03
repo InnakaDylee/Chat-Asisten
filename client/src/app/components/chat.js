@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Input } from './input';
 
 const ChatComponent = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
+  const chatMessages = useRef(null);
 
   useEffect(() => {
     fetchConversationHistory();
@@ -33,7 +34,7 @@ const ChatComponent = () => {
         role: 'user',
         content: inputMessage,
       };
-      setMessages([...messages, newMessage]);
+      setMessages((prev) => [...prev, newMessage]);
       setInputMessage('');
 
       try {
@@ -41,16 +42,23 @@ const ChatComponent = () => {
             role: 'user',
             content: inputMessage,
         });
-        setMessages([...messages, response.data.data]);
+        setMessages((prev) => [...prev, response.data.data]);
       } catch (error) {
         console.error('Error sending message:', error);
       }
     }
   };
 
+  useEffect(() => {
+    chatMessages.current.scrollTo({
+        top: chatMessages.current.scrollHeight,
+        behavior: 'instant',
+    })
+  }, [messages]);
+
   return (
     <div className="h-full border-solid gap-4 flex flex-col">
-      <div className="flex-1 h-[90%] border-solid rounded-[45px] overflow-y-auto p-4 bg-slate-700 bg-opacity-60 ">
+      <div ref={chatMessages} className="flex-1 h-[90%] border-solid rounded-[45px] overflow-y-auto p-4 bg-slate-700 bg-opacity-60 ">
         {messages.map((msg, index) => (
           <div
             key={index}
@@ -66,10 +74,18 @@ const ChatComponent = () => {
           </div>
         ))}
       </div>
-      <div className="flex flex-row h-[10%] justify-center items-center gap-6 p-4">
-        <Input value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} />
-        <button className=' w-max h-max p-3 bg-gray-600 bg-opacity-40 rounded-[30px] text-gray-400' onClick={sendMessage}>Kirim</button>
-      </div>
+      <form className="flex flex-row h-[10%] justify-center items-center gap-6 p-4">
+        <Input input={inputMessage} onChange={(e) => setInputMessage(e.target.value)} />
+        <button 
+            className=' w-max h-max p-3 bg-gray-600 bg-opacity-40 rounded-[30px] text-gray-400'
+            onClick={(e) => {
+                e.preventDefault();
+                sendMessage();
+            }}
+        >
+            Kirim
+        </button>
+      </form>
     </div>
   );
 };
